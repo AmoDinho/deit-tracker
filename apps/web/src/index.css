@@ -145,6 +145,13 @@
   #root {
     min-height: 100dvh;
   }
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
+  }
   input,
   select,
   textarea {

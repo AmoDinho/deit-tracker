@@ -561,7 +561,10 @@ export function createGraphql(db: Database, auth: Auth) {
             const goalRow = await currentGoal(ctx.db, userId)
             return {
               date: args.date,
-              ...totals,
+              calories: totals.kcal,
+              proteinG: totals.proteinG,
+              carbsG: totals.carbsG,
+              fatG: totals.fatG,
               target: goalRow ? shapeGoal(goalRow, profileRow) : null,
               meals,
             }
@@ -583,7 +586,14 @@ export function createGraphql(db: Database, auth: Auth) {
               const date = addDays(start, index)
               const dayMeals = meals.filter((item) => inDay(item.eatenAt, date, timeZone))
               const totals = sumNutrition(dayMeals)
-              return { date, ...totals, logged: dayMeals.length > 0 }
+              return {
+                date,
+                calories: totals.kcal,
+                proteinG: totals.proteinG,
+                carbsG: totals.carbsG,
+                fatG: totals.fatG,
+                logged: dayMeals.length > 0,
+              }
             })
             const elapsed = days.filter((day) => day.date < today && day.logged)
             const basis = elapsed.length ? elapsed : days.filter((day) => day.logged && day.date !== today)

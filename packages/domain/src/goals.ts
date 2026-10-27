@@ -79,7 +79,7 @@ export function calculateTargets(stats: BodyStats): TargetBreakdown {
   const bmrRaw = 10 * stats.weightKg + 6.25 * stats.heightCm - 5 * stats.age + sexOffset
   const bmr = round(bmrRaw)
   const tdee = round(bmr * activity.multiplier)
-  let adjustment = goal.adjustment
+  let adjustment: number = goal.adjustment
   const warnings: string[] = []
 
   const maxLossPerDay = (stats.weightKg * 0.01 * 7700) / 7

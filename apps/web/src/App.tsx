@@ -1,122 +1,79 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { Navigate, Route, Routes, useNavigate } from "react-router"
+import { Toaster } from "@/components/ui/sonner"
+import { DesktopNav, MobileNav } from "@/components/shell"
+import { LogProvider, useLog } from "@/components/log-provider"
+import { AuthPage } from "@/pages/auth-page"
+import { ConfirmPage } from "@/pages/confirm-page"
+import { GoalsPage } from "@/pages/goals-page"
+import { HistoryPage } from "@/pages/history-page"
+import { LabelPage } from "@/pages/label-page"
+import { OnboardingPage } from "@/pages/onboarding-page"
+import { SearchPage } from "@/pages/search-page"
+import { TodayPage } from "@/pages/today-page"
+import { draftFromMeal, writeDraft } from "@/lib/draft"
+import { useSession } from "@/lib/session"
+import type { Meal } from "@/lib/types"
 
-function App() {
-  const [count, setCount] = useState(0)
-
+export default function App() {
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+    <LogProvider>
+      <Toaster position="top-center" />
+      <Routes>
+        <Route path="/login" element={<AuthPage />} />
+        <Route path="/onboarding" element={<OnboardingPage />} />
+        <Route path="/*" element={<AuthedApp />} />
+      </Routes>
+    </LogProvider>
   )
 }
 
-export default App
+function AuthedApp() {
+  const { status, me } = useSession()
+  const log = useLog()
+  const navigate = useNavigate()
+
+  if (status === "loading") {
+    return (
+      <div className="grid min-h-dvh place-items-center">
+        <p className="text-sm text-muted-foreground">Loading Deit…</p>
+      </div>
+    )
+  }
+  if (status === "anon") return <Navigate to="/login" replace />
+  if (!me?.profile?.onboarded) return <Navigate to="/onboarding" replace />
+
+  function edit(meal: Meal) {
+    writeDraft(draftFromMeal(meal))
+    navigate("/log/confirm")
+  }
+
+  return (
+    <div className="min-h-dvh">
+      <DesktopNav onLog={() => log.openLog()} onSearch={(query) => navigate(`/search?q=${encodeURIComponent(query)}`)} />
+      <main className="mx-auto w-full max-w-6xl px-5 pt-6 pb-28 lg:px-8 lg:pt-8 lg:pb-16">
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <TodayPage
+                busy={log.busy}
+                onLog={(date, slot) => log.openLog({ date, slot })}
+                onDescribe={(text, date) => void log.describe(text, date)}
+                onPhoto={(file, date) => void log.photo(file, date)}
+                onLabel={(file, date) => void log.label(file, date)}
+                onLogAgain={(meal, date) => void log.again(meal, date)}
+              />
+            }
+          />
+          <Route path="/history" element={<HistoryPage onEdit={edit} />} />
+          <Route path="/goals" element={<GoalsPage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/log/confirm" element={<ConfirmPage />} />
+          <Route path="/log/label" element={<LabelPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+      <MobileNav onLog={() => log.openLog()} />
+    </div>
+  )
+}
