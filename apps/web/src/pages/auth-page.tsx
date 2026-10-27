@@ -1,5 +1,5 @@
-import { useState, type FormEvent, type ReactNode } from "react"
-import { Navigate, useNavigate } from "react-router"
+import { useEffect, useState, type FormEvent, type ReactNode } from "react"
+import { Navigate, useNavigate, useSearchParams } from "react-router"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,18 +11,31 @@ import { useSession } from "@/lib/session"
 export function AuthPage() {
   const { status, googleEnabled, refresh } = useSession()
   const navigate = useNavigate()
-  const [mode, setMode] = useState<"in" | "up" | "reset">("in")
+  const [params] = useSearchParams()
+  const resetToken = params.get("token")
+  const [mode, setMode] = useState<"in" | "up" | "reset">(params.get("error") ? "reset" : "in")
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [busy, setBusy] = useState(false)
 
-  if (status === "ready") return <Navigate to="/" replace />
+  useEffect(() => {
+    if (params.get("error")) toast.error("That reset link is invalid or expired.")
+  }, [params])
+
+  if (status === "ready" && !resetToken) return <Navigate to="/" replace />
 
   async function submit(event: FormEvent) {
     event.preventDefault()
     setBusy(true)
     try {
+      if (resetToken) {
+        const result = await authClient.resetPassword({ newPassword: password, token: resetToken })
+        if (result.error) throw new Error(result.error.message || "Could not reset the password.")
+        toast.success("Password updated. Sign in with the new one.")
+        navigate("/login", { replace: true })
+        return
+      }
       if (mode === "reset") {
         const result = await authClient.requestPasswordReset({
           email,
@@ -57,25 +70,29 @@ export function AuthPage() {
         </div>
       </div>
       <form onSubmit={submit} className="space-y-4 rounded-[28px] border border-border bg-card p-5">
-        <div className="flex gap-2">
-          {(["in", "up"] as const).map((item) => (
-            <Button
-              key={item}
-              type="button"
-              variant={mode === item ? "default" : "secondary"}
-              className="h-9 flex-1 rounded-full"
-              onClick={() => setMode(item)}
-            >
-              {item === "in" ? "Sign in" : "Create account"}
-            </Button>
-          ))}
-        </div>
-        {mode === "up" && (
+        {resetToken ? (
+          <p className="text-sm text-muted-foreground">Choose a new password for this account.</p>
+        ) : (
+          <div className="flex gap-2">
+            {(["in", "up"] as const).map((item) => (
+              <Button
+                key={item}
+                type="button"
+                variant={mode === item ? "default" : "secondary"}
+                className="h-9 flex-1 rounded-full"
+                onClick={() => setMode(item)}
+              >
+                {item === "in" ? "Sign in" : "Create account"}
+              </Button>
+            ))}
+          </div>
+        )}
+        {mode === "up" && !resetToken && (
           <Field label="Name">
             <Input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" className="h-11 rounded-xl" />
           </Field>
         )}
-        <Field label="Email">
+        {resetToken ? null : <Field label="Email">
           <Input
             type="email"
             required
@@ -84,8 +101,20 @@ export function AuthPage() {
             autoComplete="email"
             className="h-11 rounded-xl"
           />
-        </Field>
-        {mode !== "reset" && (
+        </Field>}
+        {resetToken ? (
+          <Field label="New password">
+            <Input
+              type="password"
+              required
+              minLength={8}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete="new-password"
+              className="h-11 rounded-xl"
+            />
+          </Field>
+        ) : mode !== "reset" && (
           <Field label="Password">
             <Input
               type="password"
@@ -99,9 +128,9 @@ export function AuthPage() {
           </Field>
         )}
         <Button type="submit" disabled={busy} className="h-12 w-full rounded-full text-base">
-          {busy ? "Please wait…" : mode === "up" ? "Create account" : mode === "reset" ? "Send reset link" : "Sign in"}
+          {busy ? "Please wait…" : resetToken ? "Update password" : mode === "up" ? "Create account" : mode === "reset" ? "Send reset link" : "Sign in"}
         </Button>
-        {mode === "in" && (
+        {mode === "in" && !resetToken && (
           <button type="button" className="w-full text-sm text-muted-foreground" onClick={() => setMode("reset")}>
             Forgot password
           </button>

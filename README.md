@@ -35,7 +35,7 @@ Data is scoped to the signed-in user, except the shared `food` table. Auth cooki
 
 ## Local setup
 
-Requirements: Node 20+ and npm.
+Requirements: Node 20.19+ or 22.12+ (Vite 8 will not build on older 20.x), and npm.
 
 ```bash
 npm install

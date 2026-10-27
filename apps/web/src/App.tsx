@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes, useNavigate } from "react-router"
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router"
 import { Toaster } from "@/components/ui/sonner"
 import { DesktopNav, MobileNav } from "@/components/shell"
 import { LogProvider, useLog } from "@/components/log-provider"
@@ -31,6 +31,8 @@ function AuthedApp() {
   const { status, me } = useSession()
   const log = useLog()
   const navigate = useNavigate()
+  const location = useLocation()
+  const focused = location.pathname.startsWith("/log") || location.pathname.startsWith("/search")
 
   if (status === "loading") {
     return (
@@ -49,8 +51,10 @@ function AuthedApp() {
 
   return (
     <div className="min-h-dvh">
-      <DesktopNav onLog={() => log.openLog()} onSearch={(query) => navigate(`/search?q=${encodeURIComponent(query)}`)} />
-      <main className="mx-auto w-full max-w-6xl px-5 pt-6 pb-28 lg:px-8 lg:pt-8 lg:pb-16">
+      {focused ? null : (
+        <DesktopNav onLog={() => log.openLog()} onSearch={(query) => navigate(`/search?q=${encodeURIComponent(query)}`)} />
+      )}
+      <main className={`mx-auto w-full max-w-6xl px-5 pt-6 lg:px-8 lg:pt-8 ${focused ? "pb-10" : "pb-28 lg:pb-16"}`}>
         <Routes>
           <Route
             path="/"
@@ -73,7 +77,7 @@ function AuthedApp() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
-      <MobileNav onLog={() => log.openLog()} />
+      {focused ? null : <MobileNav onLog={() => log.openLog()} />}
     </div>
   )
 }
