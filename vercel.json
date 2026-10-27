@@ -1,0 +1,5 @@
+{
+  "buildCommand": "npm run build -w @deit/web",
+  "outputDirectory": "apps/web/dist",
+  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }]
+}
