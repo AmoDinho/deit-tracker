@@ -1,0 +1,19 @@
+{
+  "name": "deit-tracker",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c cyan,green \"npm run dev -w @deit/api\" \"npm run dev -w @deit/web\"",
+    "dev:web": "npm run dev -w @deit/web",
+    "dev:api": "npm run dev -w @deit/api",
+    "build": "npm run build -w @deit/web && npm run build -w @deit/api",
+    "start": "npm run start -w @deit/api",
+    "db:seed": "npm run seed -w @deit/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

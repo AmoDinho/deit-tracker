@@ -147,3 +147,8 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# Local database, uploads, and PWA dev output
+.data/
+apps/api/dist/
+apps/web/dev-dist/
